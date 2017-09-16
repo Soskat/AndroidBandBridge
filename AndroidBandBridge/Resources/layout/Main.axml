@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <TextView
+        android:text="Server info:"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/textView1" />
+    <GridLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/gridLayout1"
+        android:columnCount="2"
+        android:alignmentMode="alignBounds"
+        android:useDefaultMargins="true">
+        <TextView
+            android:text="Server address:"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:id="@+id/textView2" />
+        <TextView
+            android:text="127.0.0.1"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:id="@+id/ServerAddressText"
+            android:layout_gravity="fill_horizontal" />
+        <TextView
+            android:text="Service port:"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:id="@+id/textView3" />
+        <EditText
+            android:id="@+id/ServicePortText"
+            android:text="2055"
+            android:layout_width="wrap_content"
+            android:layout_gravity="fill_horizontal" />
+        <TextView
+            android:text="Data buffer size:"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:id="@+id/textView4" />
+        <EditText
+            android:id="@+id/DataBufferSizeText"
+            android:text="16"
+            android:layout_gravity="fill_horizontal" />
+        <TextView
+            android:text="Callibration buffer size:"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:id="@+id/textView5" />
+        <EditText
+            android:id="@+id/CallibrationBufferSizeText"
+            android:text="200"
+            android:layout_gravity="fill_horizontal" />
+        <TextView
+            android:text="Start server"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:id="@+id/StartStopServerLabel"
+            android:layout_gravity="fill_horizontal"
+            android:gravity="center_horizontal" />
+        <ToggleButton
+            android:id="@+id/StartServerToggle" />
+    </GridLayout>
+    <TextView
+        android:text="Connected MS Band devices:"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/textView6" />
+    <Button
+        android:text="Search for MS Band devices..."
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/SearchMSBandsButton" />
+    <ListView
+        android:minWidth="25px"
+        android:minHeight="25px"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/ConnectedBandsListView" />
+    <TextView
+        android:text="Debug log"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/DebugLogText" />
+</LinearLayout>
