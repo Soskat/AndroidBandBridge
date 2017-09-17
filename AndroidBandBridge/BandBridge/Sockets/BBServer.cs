@@ -7,7 +7,7 @@ using System.Net.Sockets;
 using System.Threading;
 using Communication.Packet;
 using Communication.Data;
-
+using System.Threading.Tasks;
 
 namespace BandBridge.Sockets
 {
@@ -27,7 +27,7 @@ namespace BandBridge.Sockets
         /// <summary><see cref="PacketProtocol"/> object.</summary>
         private static PacketProtocol packetizer = null;
         /// <summary>Received response. Is instance of <see cref="Communication.Data.Message"/>.</summary>
-        private static Communication.Data.Message receivedResponse;
+        private static Communication.Data.Message receivedMessage;
         #endregion
 
 
@@ -99,8 +99,8 @@ namespace BandBridge.Sockets
             {
                 if (receivedMsg.Length > 0)
                 {
-                    receivedResponse = Communication.Data.Message.Deserialize(receivedMsg);
-                    ServerLog = "Received: " + receivedResponse;
+                    receivedMessage = Communication.Data.Message.Deserialize(receivedMsg);
+                    ServerLog = "Received: " + receivedMessage;
                     allDone.Set();
                 }
             };
@@ -134,7 +134,7 @@ namespace BandBridge.Sockets
         /// Starts listening for incoming connections.
         /// Based on: http://msdn.microsoft.com/en-us/library/fx6588te.aspx
         /// </summary>
-        public void StartListening()
+        public async void StartListening()
         {
             // create buffer for incoming data:
             receiveBuffer = new byte[bufferSize];
@@ -152,7 +152,7 @@ namespace BandBridge.Sockets
 
                 while (isServerWorking)
                 {
-                    // Set the event to nonsignaled state.
+                    // reset signals:
                     allDone.Reset();
 
                     // Start an asynchronous socket to listen for connections.
@@ -177,7 +177,7 @@ namespace BandBridge.Sockets
                 // Signal the main thread to continue.  
                 allDone.Set();
 
-                // Get the socket that handles the client request.  
+                // Get the socket that handles the client request.
                 Socket listener = (Socket)ar.AsyncState;
                 Socket handler = listener.EndAccept(ar);
 
@@ -194,12 +194,10 @@ namespace BandBridge.Sockets
         }
 
         // Based on: http://msdn.microsoft.com/en-us/library/fx6588te.aspx
-        private void ReadCallback(IAsyncResult ar)
+        private async void ReadCallback(IAsyncResult ar)
         {
             try
             {
-                String content = String.Empty;
-
                 // Retrieve the state object and the handler socket from the asynchronous state object.  
                 StateObject state = (StateObject)ar.AsyncState;
                 Socket handler = state.workSocket;
@@ -210,29 +208,20 @@ namespace BandBridge.Sockets
                 {
                     // pass received data and receiving process to packetizer object:
                     packetizer.DataReceived(state.buffer);
-                }
 
-
-
-
-                if (bytesRead > 0)
-                {
-                    // There  might be more data, so store the data received so far.  
-                    state.sb.Append(Encoding.ASCII.GetString(state.buffer, 0, bytesRead));
-
-                    // Check for end-of-file tag. If it is not there, read more data.  
-                    content = state.sb.ToString();
-                    if (content.IndexOf("<EOF>") > -1)
+                    // wait for the rest of the message:
+                    if (!packetizer.AllBytesReceived)
                     {
-                        // All the data has been read from the client. Display it on the console.  
-                        Console.WriteLine("Read {0} bytes from socket. \n Data : {1}", content.Length, content);
-                        // Echo the data back to the client.  
-                        Send(handler, content);
+                        handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0, new AsyncCallback(ReadCallback), state);
                     }
                     else
                     {
-                        // Not all data received. Get more.  
-                        handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0, new AsyncCallback(ReadCallback), state);
+                        // prepare response:
+                        Communication.Data.Message response = await PrepareResponseToClient(receivedMessage);
+                        byte[] byteData = PacketProtocol.WrapMessage(Communication.Data.Message.Serialize(response));
+
+                        // send response to remote client socket:
+                        Send(handler, byteData);
                     }
                 }
             }
@@ -243,14 +232,10 @@ namespace BandBridge.Sockets
         }
 
         // Based on: http://msdn.microsoft.com/en-us/library/fx6588te.aspx
-        private void Send(Socket handler, string content)
+        private void Send(Socket handler, byte[] data)
         {
-            // Convert the string data to byte data using ASCII encoding.  
-            byte[] byteData = Encoding.ASCII.GetBytes(data);
-
             // Begin sending the data to the remote device.  
-            handler.BeginSend(byteData, 0, byteData.Length, 0,
-                new AsyncCallback(SendCallback), handler);
+            handler.BeginSend(data, 0, data.Length, 0, new AsyncCallback(SendCallback), handler);
         }
 
         // Based on: http://msdn.microsoft.com/en-us/library/fx6588te.aspx
@@ -275,5 +260,18 @@ namespace BandBridge.Sockets
             }
         }
         #endregion
+
+
+
+
+        /// <summary>
+        /// Prepares response to given message.
+        /// </summary>
+        /// <param name="message">Received message</param>
+        /// <returns>Response to send</returns>
+        private async Task<Communication.Data.Message> PrepareResponseToClient(Communication.Data.Message message)
+        {
+            return null;
+        }
     }
 }
