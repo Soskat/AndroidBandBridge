@@ -45,16 +45,19 @@ namespace AndroidBandBridge
 		{
 			
 			// aapt resource value: 0x7f040009
-			public const int CallibrationBufferSizeText = 2130968585;
+			public const int CalibrationBufferSizeText = 2130968585;
+			
+			// aapt resource value: 0x7f04000f
+			public const int ConnectedBandsListView = 2130968591;
 			
 			// aapt resource value: 0x7f04000e
-			public const int ConnectedBandsListView = 2130968590;
+			public const int CreateFakeBandsButton = 2130968590;
 			
 			// aapt resource value: 0x7f040007
 			public const int DataBufferSizeText = 2130968583;
 			
-			// aapt resource value: 0x7f04000f
-			public const int DebugLogText = 2130968591;
+			// aapt resource value: 0x7f040010
+			public const int DebugLogText = 2130968592;
 			
 			// aapt resource value: 0x7f04000d
 			public const int SearchMSBandsButton = 2130968589;

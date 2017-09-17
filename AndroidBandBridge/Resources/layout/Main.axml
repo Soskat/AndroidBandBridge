@@ -31,7 +31,7 @@
             android:id="@+id/textView3" />
         <EditText
             android:id="@+id/ServicePortText"
-            android:text="2055"
+            android:text="2555"
             android:layout_width="wrap_content"
             android:layout_gravity="fill_horizontal" />
         <TextView
@@ -43,11 +43,11 @@
             android:text="16"
             android:layout_gravity="fill_horizontal" />
         <TextView
-            android:text="Callibration buffer size:"
+            android:text="Calibration buffer size:"
             android:textAppearance="?android:attr/textAppearanceMedium"
             android:id="@+id/textView5" />
         <EditText
-            android:id="@+id/CallibrationBufferSizeText"
+            android:id="@+id/CalibrationBufferSizeText"
             android:text="200"
             android:layout_gravity="fill_horizontal" />
         <TextView
@@ -70,6 +70,11 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/SearchMSBandsButton" />
+    <Button
+        android:text="Create Fake Band devices..."
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/CreateFakeBandsButton" />
     <ListView
         android:minWidth="25px"
         android:minHeight="25px"

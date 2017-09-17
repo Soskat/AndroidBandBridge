@@ -52,10 +52,6 @@
       <HintPath>..\packages\Google.Protobuf.3.4.1\lib\netstandard1.0\Google.Protobuf.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Microsoft.Band, Version=1.3.20628.2, Culture=neutral, PublicKeyToken=608d7da3159f502b, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Band.1.3.20628\lib\portable-net45+win+wpa81\Microsoft.Band.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.Net.Http" />
@@ -71,6 +67,8 @@
     <Compile Include="BandBridge\Communication\Data\SensorData.cs" />
     <Compile Include="BandBridge\Communication\Packet\PacketProtocol.cs" />
     <Compile Include="BandBridge\Data\CircularBuffer.cs" />
+    <Compile Include="BandBridge\Sockets\BBServer.cs" />
+    <Compile Include="BandBridge\Sockets\StateObject.cs" />
     <Compile Include="MainActivity.cs" />
     <Compile Include="Resources\Resource.Designer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
