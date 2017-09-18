@@ -117,17 +117,15 @@ namespace BandBridge.Sockets
         /// </summary>
         public BBServer()
         {
-            //IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
-            //hostAddress = Array.Find(ipHostInfo.AddressList, a => a.AddressFamily == AddressFamily.InterNetwork);
             hostAddress = Dns.GetHostEntry(Dns.GetHostName()).AddressList[0];
             ServerLog = hostAddress.ToString();
-
             servicePort = DefaultServicePort;
             dataBufferSize = 16;
             calibrationBufferSize = 200;
             maxMessageSize = MaxMessageSize;
             connectedBands = new Dictionary<string, BandData>();
 
+            BandInfoChanged += () => { };
             //FakeBands();
         }
         #endregion
@@ -159,8 +157,13 @@ namespace BandBridge.Sockets
         /// <returns></returns>
         public async Task GetMSBandDevices()
         {
+            // remove currently connected Band:
+            if (connectedBand != null)
+            {
+                await connectedBand.StopReadingSensorsData();
+                connectedBand = null;
+            }
             MSBandLog = ">> Get MS Band devices...";
-
             var bandClientManager = BandClientManager.Instance;
             // query the service for paired devices
             var pairedBands = await bandClientManager.GetPairedBandsAsync();
@@ -175,7 +178,9 @@ namespace BandBridge.Sockets
                 if (bandClient != null)
                 {
                     connectedBand = new BandData(bandClient, bandInfo.Name, bufferSize, calibrationBufferSize);
-                    BandInfoChanged();
+                    connectedBand.ReadingsChanged += () => { BandInfoChanged(); };
+                    await connectedBand.StartReadingSensorsData();
+                    //BandInfoChanged();
                 }
             }
         }

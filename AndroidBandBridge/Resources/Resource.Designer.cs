@@ -47,23 +47,20 @@ namespace AndroidBandBridge
 			// aapt resource value: 0x7f040009
 			public const int CalibrationBufferSizeText = 2130968585;
 			
-			// aapt resource value: 0x7f040010
-			public const int CreateFakeBandsButton = 2130968592;
-			
 			// aapt resource value: 0x7f040007
 			public const int DataBufferSizeText = 2130968583;
 			
-			// aapt resource value: 0x7f040011
-			public const int MSBandDebugLogText = 2130968593;
+			// aapt resource value: 0x7f040010
+			public const int MSBandDebugLogText = 2130968592;
 			
-			// aapt resource value: 0x7f040018
-			public const int MSBandGsrText = 2130968600;
+			// aapt resource value: 0x7f040017
+			public const int MSBandGsrText = 2130968599;
 			
-			// aapt resource value: 0x7f040016
-			public const int MSBandHrText = 2130968598;
+			// aapt resource value: 0x7f040015
+			public const int MSBandHrText = 2130968597;
 			
-			// aapt resource value: 0x7f040014
-			public const int MSBandNameText = 2130968596;
+			// aapt resource value: 0x7f040013
+			public const int MSBandNameText = 2130968595;
 			
 			// aapt resource value: 0x7f04000f
 			public const int SearchMSBandsButton = 2130968591;
@@ -86,8 +83,8 @@ namespace AndroidBandBridge
 			// aapt resource value: 0x7f040000
 			public const int gridLayout1 = 2130968576;
 			
-			// aapt resource value: 0x7f040012
-			public const int gridLayout2 = 2130968594;
+			// aapt resource value: 0x7f040011
+			public const int gridLayout2 = 2130968593;
 			
 			// aapt resource value: 0x7f04000d
 			public const int linearLayout1 = 2130968589;
@@ -95,11 +92,11 @@ namespace AndroidBandBridge
 			// aapt resource value: 0x7f040001
 			public const int textView1 = 2130968577;
 			
-			// aapt resource value: 0x7f040015
-			public const int textView11 = 2130968597;
+			// aapt resource value: 0x7f040014
+			public const int textView11 = 2130968596;
 			
-			// aapt resource value: 0x7f040017
-			public const int textView13 = 2130968599;
+			// aapt resource value: 0x7f040016
+			public const int textView13 = 2130968598;
 			
 			// aapt resource value: 0x7f040002
 			public const int textView2 = 2130968578;
@@ -116,8 +113,8 @@ namespace AndroidBandBridge
 			// aapt resource value: 0x7f04000e
 			public const int textView6 = 2130968590;
 			
-			// aapt resource value: 0x7f040013
-			public const int textView7 = 2130968595;
+			// aapt resource value: 0x7f040012
+			public const int textView7 = 2130968594;
 			
 			static Id()
 			{

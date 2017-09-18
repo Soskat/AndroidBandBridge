@@ -16,7 +16,6 @@ namespace AndroidBandBridge
         private EditText calibrationBufferSizeText;
         private ToggleButton startServerToggle;
         private Button searchMSBandsButton;
-        private Button createFakeBandsButton;
         private TextView serverDebugLogText;
         private TextView msBandDebugLogText;
         private TextView msBandNameText;
@@ -41,7 +40,6 @@ namespace AndroidBandBridge
             calibrationBufferSizeText = FindViewById<EditText>(Resource.Id.CalibrationBufferSizeText);
             startServerToggle = FindViewById<ToggleButton>(Resource.Id.StartServerToggle);
             searchMSBandsButton = FindViewById<Button>(Resource.Id.SearchMSBandsButton);
-            createFakeBandsButton = FindViewById<Button>(Resource.Id.CreateFakeBandsButton);
             serverDebugLogText = FindViewById<TextView>(Resource.Id.ServerDebugLogText);
             msBandDebugLogText = FindViewById<TextView>(Resource.Id.MSBandDebugLogText);
             msBandNameText = FindViewById<TextView>(Resource.Id.MSBandNameText);
@@ -52,25 +50,36 @@ namespace AndroidBandBridge
             bbServer = new BBServer();
             bbServer.BandInfoChanged += () =>
             {
-                if (bbServer.ConnectedBand != null)
-                {
-                    msBandNameText.Text = bbServer.ConnectedBand.Name;
-                    msBandHrText.Text = bbServer.ConnectedBand.HrReading.ToString();
-                    msBandGsrText.Text = bbServer.ConnectedBand.GsrReading.ToString();
-                }
+                RunOnUiThread(() => {
+                    if (bbServer.ConnectedBand != null)
+                    {
+                        msBandNameText.Text = bbServer.ConnectedBand.Name;
+                        msBandHrText.Text = bbServer.ConnectedBand.HrReading.ToString();
+                        msBandGsrText.Text = bbServer.ConnectedBand.GsrReading.ToString();
+                    }
+                });
             };
             UpdateUI();
 
             // Add behaviour to buttons:
-            startServerToggle.Click += (object sender, System.EventArgs e) => {
-                if (startServerToggle.Checked) StartBBServer();
-                else StopBBServer();
+            startServerToggle.Click += (object sender, System.EventArgs e) =>
+            {
+                if (startServerToggle.Checked)
+                {
+                    serverDebugLogText.Text = "start server";
+                    bbServer.UpdateServerSettings(servicePortText.Text, dataBufferSizeText.Text, calibrationBufferSizeText.Text);
+                    //await bbServer.StartListening();
+                }
+                else
+                {
+                    serverDebugLogText.Text = "stop server";
+                    //await bbServer.StopServer();
+                }
             };
-            searchMSBandsButton.Click += (object sender, System.EventArgs e) => {
-                serverDebugLogText.Text = "search for MS Band devices...";
-            };
-            createFakeBandsButton.Click += (object sender, System.EventArgs e) => {
-                serverDebugLogText.Text = "create Fake Band devices...";
+            searchMSBandsButton.Click += async (object sender, System.EventArgs e) =>
+            {
+                await bbServer.GetMSBandDevices();
+                msBandDebugLogText.Text = bbServer.MSBandLog;
             };
         }
 
@@ -84,25 +93,6 @@ namespace AndroidBandBridge
             servicePortText.Text = bbServer.ServicePort.ToString();
             dataBufferSizeText.Text = bbServer.DataBufferSize.ToString();
             calibrationBufferSizeText.Text = bbServer.CalibrationBufferSize.ToString();
-        }
-
-        /// <summary>
-        /// Starts the server listening for incoming connections.
-        /// </summary>
-        private async void StartBBServer()
-        {
-            serverDebugLogText.Text = "start server";
-            bbServer.UpdateServerSettings(servicePortText.Text, dataBufferSizeText.Text, calibrationBufferSizeText.Text);
-            await bbServer.StartListening();
-        }
-
-        /// <summary>
-        /// Stops the server listening for incoming connections.
-        /// </summary>
-        private async void StopBBServer()
-        {
-            serverDebugLogText.Text = "stop server";
-            await bbServer.StopServer();
         }
         #endregion
     }

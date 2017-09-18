@@ -91,6 +91,8 @@ namespace BandBridge.Data
             this.calibrationBufferSize = calibrationBufferSize;
             HrBuffer = new CircularBuffer(this.bufferSize);
             GsrBuffer = new CircularBuffer(this.bufferSize);
+
+            ReadingsChanged += () => { };
         }
         #endregion
 
@@ -108,6 +110,10 @@ namespace BandBridge.Data
             {
                 HrBuffer.Add(args.SensorReading.HeartRate);
                 HrReading = args.SensorReading.HeartRate;
+
+                Debug.WriteLine(args.SensorReading.HeartRate);
+
+
                 // inform that hr reading changed:
                 ReadingsChanged();
             };
@@ -136,6 +142,10 @@ namespace BandBridge.Data
             gsr.ReadingChanged += (o, args) => {
                 GsrBuffer.Add((int)args.SensorReading.Resistance);
                 GsrReading = (int)args.SensorReading.Resistance;
+
+                Debug.WriteLine(args.SensorReading.Resistance);
+
+
                 // inform that gsr reading changed:
                 ReadingsChanged();
             };
