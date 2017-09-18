@@ -81,7 +81,7 @@ namespace AndroidBandBridge
 
         private void StartBBServer()
         {
-
+            //bbServer.UpdateServerSettings();
         }
 
         private void StopBBServer()

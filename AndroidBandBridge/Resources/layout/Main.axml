@@ -33,7 +33,9 @@
             android:id="@+id/ServicePortText"
             android:text="2555"
             android:layout_width="wrap_content"
-            android:layout_gravity="fill_horizontal" />
+            android:layout_gravity="fill_horizontal"
+            android:numeric="signed"
+            android:inputType="number" />
         <TextView
             android:text="Data buffer size:"
             android:textAppearance="?android:attr/textAppearanceMedium"
@@ -41,7 +43,9 @@
         <EditText
             android:id="@+id/DataBufferSizeText"
             android:text="16"
-            android:layout_gravity="fill_horizontal" />
+            android:layout_gravity="fill_horizontal"
+            android:inputType="number"
+            android:numeric="signed" />
         <TextView
             android:text="Calibration buffer size:"
             android:textAppearance="?android:attr/textAppearanceMedium"
@@ -49,7 +53,9 @@
         <EditText
             android:id="@+id/CalibrationBufferSizeText"
             android:text="200"
-            android:layout_gravity="fill_horizontal" />
+            android:layout_gravity="fill_horizontal"
+            android:inputType="number"
+            android:numeric="signed" />
         <TextView
             android:text="Start server"
             android:textAppearance="?android:attr/textAppearanceMedium"

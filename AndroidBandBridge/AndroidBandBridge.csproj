@@ -66,6 +66,7 @@
     <Compile Include="BandBridge\Communication\Data\SensorCode.cs" />
     <Compile Include="BandBridge\Communication\Data\SensorData.cs" />
     <Compile Include="BandBridge\Communication\Packet\PacketProtocol.cs" />
+    <Compile Include="BandBridge\Data\BandData.cs" />
     <Compile Include="BandBridge\Data\CircularBuffer.cs" />
     <Compile Include="BandBridge\Sockets\BBServer.cs" />
     <Compile Include="BandBridge\Sockets\StateObject.cs" />

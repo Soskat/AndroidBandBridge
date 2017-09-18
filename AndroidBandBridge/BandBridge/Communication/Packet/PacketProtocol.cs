@@ -105,21 +105,29 @@ namespace Communication.Packet
         {
             // Process the incoming data in chunks, as the ReadCompleted requests it
 
-            // Logically, we are satisfying read requests with the received data, instead of processing the
-            //  incoming buffer looking for messages.
+            // Logically, we are satisfying read requests with the received data, 
+            // instead of processing the incoming buffer looking for messages.
 
             int i = 0;
             while (i != data.Length)
             {
                 // Determine how many bytes we want to transfer to the buffer and transfer them
                 int bytesAvailable = data.Length - i;
+                DEBUG_WriteLine("\t\ti: " + i);
+                DEBUG_WriteLine("\t\tdata.Length: " + data.Length);
+                DEBUG_WriteLine("\t\tbytesAvailable: " + bytesAvailable);
+
                 if (this.dataBuffer != null)
                 {
+                    DEBUG_WriteLine("\t\t[DB] bytesReceived: " + this.bytesReceived);
                     // We're reading into the data buffer
                     int bytesRequested = this.dataBuffer.Length - this.bytesReceived;
+                    DEBUG_WriteLine("\t\t[DB] bytesRequested: " + bytesRequested);
 
                     // Copy the incoming bytes into the buffer
                     int bytesTransferred = Math.Min(bytesRequested, bytesAvailable);
+                    DEBUG_WriteLine("\t\t[DB] bytesTransfered: " + bytesTransferred);
+
                     Array.Copy(data, i, this.dataBuffer, this.bytesReceived, bytesTransferred);
                     i += bytesTransferred;
 
@@ -128,18 +136,23 @@ namespace Communication.Packet
                 }
                 else
                 {
+                    DEBUG_WriteLine("\t\t[LB] bytesReceived: " + this.bytesReceived);
                     // We're reading into the length prefix buffer
                     int bytesRequested = this.lengthBuffer.Length - this.bytesReceived;
+                    DEBUG_WriteLine("\t\t[LB] bytesRequested: " + bytesRequested);
 
                     // Copy the incoming bytes into the buffer
                     int bytesTransferred = Math.Min(bytesRequested, bytesAvailable);
+                    DEBUG_WriteLine("\t\t[LB] bytesTransfered: " + bytesTransferred);
                     Array.Copy(data, i, this.lengthBuffer, this.bytesReceived, bytesTransferred);
+                    //Array.Copy(data, i, this.lengthBuffer, 0, bytesTransferred);
                     i += bytesTransferred;
-
                     // Notify "read completion"
                     this.ReadCompleted(bytesTransferred);
                 }
             }
+
+            this.bytesReceived = 0;
         }
 
         /// <summary>
@@ -151,6 +164,7 @@ namespace Communication.Packet
         {
             // Get the number of bytes read into the buffer
             this.bytesReceived += count;
+            DEBUG_WriteLine("\t bytesReceived: " + this.bytesReceived);
 
             if (this.dataBuffer == null)
             {
@@ -158,7 +172,7 @@ namespace Communication.Packet
 
                 if (this.bytesReceived != sizeof(int))
                 {
-                    // We haven't gotten all the length buffer yet: just wait for more data to arrive
+                    // We haven't gotten all the length buffer yet: just wait for more data to
                 }
                 else
                 {
@@ -171,7 +185,25 @@ namespace Communication.Packet
 
                     // Another sanity check is needed here for very large packets, to prevent denial-of-service attacks
                     if (this.maxMessageSize > 0 && length > this.maxMessageSize)
-                        throw new System.Net.ProtocolViolationException("Message length " + length.ToString(System.Globalization.CultureInfo.InvariantCulture) + " is larger than maximum message size " + this.maxMessageSize.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                    {
+                        DEBUG_WriteLine("Message TOO LONG......");
+                        DEBUG_ShowLengthBuffer();
+
+                        // set flag that all message's bytes was reveived:
+                        AllBytesReceived = true;
+
+                        // We've gotten an entire packet
+                        if (this.MessageArrived != null)
+                            this.MessageArrived(new byte[0]);
+
+                        // Start reading the length buffer again
+                        this.dataBuffer = null;
+                        this.bytesReceived = 0;
+                        //throw new System.Net.ProtocolViolationException(
+                        //    "Message length " + length.ToString(System.Globalization.CultureInfo.InvariantCulture) + 
+                        //    " is larger than maximum message size " + this.maxMessageSize.ToString(System.Globalization.CultureInfo.InvariantCulture));
+
+                    }
 
                     // Zero-length packets are allowed as keepalives
                     if (length == 0)
@@ -182,6 +214,8 @@ namespace Communication.Packet
                     }
                     else
                     {
+                        DEBUG_WriteLine("Good size message...");
+                        DEBUG_ShowLengthBuffer();
                         // Create the data buffer and start reading into it
                         this.dataBuffer = new byte[length];
                         this.bytesReceived = 0;
@@ -196,6 +230,10 @@ namespace Communication.Packet
                 }
                 else
                 {
+                    DEBUG_WriteLine("Received whole message...");
+                    DEBUG_ShowDataBuffer();
+
+
                     // set flag that all message's bytes was reveived:
                     AllBytesReceived = true;
 
@@ -210,6 +248,48 @@ namespace Communication.Packet
             }
         }
 
+
+
+
+        public void DEBUG_WriteLine(string s)
+        {
+            Debug.WriteLine(s);
+            Console.WriteLine(s);
+        }
+
+        public void DEBUG_ShowLengthBuffer()
+        {
+            // debug:
+            Debug.Write("\tlengthBuffer:");
+            foreach (var b in lengthBuffer) Debug.Write(" " + b);
+            Debug.WriteLine("");
+
+            // console:
+            Console.Write("\tlengthBuffer:");
+            foreach (var b in lengthBuffer) Console.Write(" " + b);
+            Console.WriteLine("");
+        }
+
+
+
+        public void DEBUG_ShowDataBuffer()
+        {
+            // debug:
+            if (dataBuffer != null)
+            {
+                Debug.Write(">> dataBuffer:");
+                for (int i = 0; i < 10; i++) Debug.Write(" " + dataBuffer[i]);
+                Debug.WriteLine("");
+            }
+
+            // console:
+            if (dataBuffer != null)
+            {
+                Console.Write(">> dataBuffer:");
+                for (int i = 0; i < 10; i++) Console.Write(" " + dataBuffer[i]);
+                Console.WriteLine("");
+            }
+        }
 
 
         /// <summary>

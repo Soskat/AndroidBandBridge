@@ -15,7 +15,7 @@ namespace Communication.Data
         /// <summary>
         /// An array with types known by DataContractSerializer.
         /// </summary>
-        public static Type[] SerializedTypesSet = { typeof(SensorData), typeof(SensorData[]) };
+        public static Type[] SerializedTypesSet = { typeof(SensorData), typeof(SensorData[]), typeof(string[]) };
         #endregion
 
         #region Properties
