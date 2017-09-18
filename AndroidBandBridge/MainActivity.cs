@@ -67,14 +67,32 @@ namespace AndroidBandBridge
             {
                 if (startServerToggle.Checked)
                 {
-                    bbServer.UpdateServerSettings(servicePortText.Text, dataBufferSizeText.Text, calibrationBufferSizeText.Text);
-                    Task.Factory.StartNew(() => bbServer.StartListening());
-                    serverDebugLogText.Text = "start server";
+                    // show dialog to confirm decision:
+                    var startServerDialog = new AlertDialog.Builder(this);
+                    startServerDialog.SetMessage("Start BandBridge server?");
+                    startServerDialog.SetNeutralButton("Yes", delegate {
+                        bbServer.UpdateServerSettings(servicePortText.Text, dataBufferSizeText.Text, calibrationBufferSizeText.Text);
+                        Task.Factory.StartNew(() => bbServer.StartListening());
+                        serverDebugLogText.Text = "started server";
+                    });
+                    startServerDialog.SetNegativeButton("No", delegate {
+                        startServerToggle.Checked = false;
+                    });
+                    startServerDialog.Show();
                 }
                 else
                 {
-                    Task.Factory.StartNew(() => bbServer.StopServer());
-                    serverDebugLogText.Text = "stop server";
+                    // show dialog to confirm decision:
+                    var stopServerDialog = new AlertDialog.Builder(this);
+                    stopServerDialog.SetMessage("Stop BandBridge server?");
+                    stopServerDialog.SetNeutralButton("Yes", delegate {
+                        Task.Factory.StartNew(() => bbServer.StopServer());
+                        serverDebugLogText.Text = "stopped server";
+                    });
+                    stopServerDialog.SetNegativeButton("No", delegate {
+                        startServerToggle.Checked = true;
+                    });
+                    stopServerDialog.Show();
                 }
             };
             searchMSBandsButton.Click += async (object sender, System.EventArgs e) =>
