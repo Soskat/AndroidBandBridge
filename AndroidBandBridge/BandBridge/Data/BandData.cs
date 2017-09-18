@@ -96,6 +96,7 @@ namespace BandBridge.Data
         }
         #endregion
 
+
         #region Private methods
         /// <summary>
         /// Gets Hear Rate sensor values from connected Band device.
@@ -218,14 +219,36 @@ namespace BandBridge.Data
             await StopGsrReading();
             Debug.WriteLine(name + ": Stopped reading data...");
         }
-        #endregion
 
-
-
-
+        /// <summary>
+        /// Calibrates readings from MS Band sensors.
+        /// </summary>
+        /// <returns>Calibrated data</returns>
         public async Task<SensorData[]> CalibrateSensorsData()
         {
-            return new SensorData[] { new SensorData(SensorCode.HR, hrReading), new SensorData(SensorCode.GSR, gsrReading) };
+            // calibrate sensors data:
+            await StopReadingSensorsData();
+            hrBuffer.Resize(calibrationBufferSize);
+            gsrBuffer.Resize(calibrationBufferSize);
+            await StartReadingSensorsData();
+
+            Debug.WriteLine(name + ": start calibration => " + DateTime.Now);
+            // wait until the buffer is full:
+            while (!hrBuffer.IsFull) await Task.Delay(100);
+            Debug.WriteLine(name + ": calibration is over => " + DateTime.Now);
+
+            // get the reference values for each sensor:
+            SensorData hrData = new SensorData(SensorCode.HR, hrBuffer.GetAverage());
+            SensorData gsrData = new SensorData(SensorCode.GSR, gsrBuffer.GetAverage());
+
+            // continue monitoring incoming sensors readings
+            await StopReadingSensorsData();
+            hrBuffer.Resize(bufferSize);
+            gsrBuffer.Resize(bufferSize);
+            await StartReadingSensorsData();
+
+            return new SensorData[] { hrData, gsrData };
         }
+        #endregion
     }
 }

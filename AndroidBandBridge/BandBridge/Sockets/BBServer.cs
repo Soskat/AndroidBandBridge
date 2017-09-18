@@ -12,8 +12,12 @@ using BandBridge.Data;
 using System.Linq;
 using Microsoft.Band.Portable;
 
+
 namespace BandBridge.Sockets
 {
+    /// <summary>
+    /// Class that implements BandBridge server services.
+    /// </summary>
     public class BBServer
     {
         #region Constants
@@ -59,9 +63,6 @@ namespace BandBridge.Sockets
         private StringBuilder serverLog;
         /// <summary>MS Band log.</summary>
         private StringBuilder msBandLog;
-
-        /// <summary>Dictionary of connected Band devices.</summary>
-        private Dictionary<string, BandData> connectedBands;
         /// <summary>Connected Band device.</summary>
         private BandData connectedBand;
         #endregion
@@ -76,6 +77,10 @@ namespace BandBridge.Sockets
         public int DataBufferSize { get { return dataBufferSize; } }
         /// <summary>Size of calibration data buffer.</summary>
         public int CalibrationBufferSize { get { return calibrationBufferSize; } }
+        /// <summary>Informs that sensor readings changed.</summary>
+        public Action BandInfoChanged { get; set; }
+        /// <summary>Connected MS Band device.</summary>
+        public BandData ConnectedBand { get { return connectedBand; } }
         /// <summary>Server log.</summary>
         public string ServerLog
         {
@@ -104,10 +109,6 @@ namespace BandBridge.Sockets
                 Console.WriteLine(value);
             }
         }
-        /// <summary>Informs that sensor readings changed.</summary>
-        public Action BandInfoChanged { get; set; }
-        /// <summary>Connected MS Band device.</summary>
-        public BandData ConnectedBand { get { return connectedBand; } }
         #endregion
 
 
@@ -123,10 +124,7 @@ namespace BandBridge.Sockets
             dataBufferSize = 16;
             calibrationBufferSize = 200;
             maxMessageSize = MaxMessageSize;
-            connectedBands = new Dictionary<string, BandData>();
-
             BandInfoChanged += () => { };
-            //FakeBands();
         }
         #endregion
 
@@ -180,59 +178,9 @@ namespace BandBridge.Sockets
                     connectedBand = new BandData(bandClient, bandInfo.Name, bufferSize, calibrationBufferSize);
                     connectedBand.ReadingsChanged += () => { BandInfoChanged(); };
                     await connectedBand.StartReadingSensorsData();
-                    //BandInfoChanged();
                 }
             }
         }
-
-        ///// <summary>
-        ///// Generates <see cref="FakeBandsAmount"/> number of Fake Bands.
-        ///// </summary>
-        ///// <returns></returns>
-        //public async Task GetFakeBands()
-        //{
-        //    Debug.WriteLine(">> Get Fake Bands...");
-
-        //    List<IBandInfo> fakeBands = new List<IBandInfo>();
-        //    for (int i = 1; i <= FakeBandsAmount; i++)
-        //    {
-        //        fakeBands.Add(new FakeBandInfo(BandConnectionType.Bluetooth, "Fake Band " + i.ToString()));
-        //    }
-        //    FakeBandClientManager.Configure(new FakeBandClientManagerOptions { Bands = fakeBands });
-
-        //    IBandClientManager clientManager = FakeBandClientManager.Instance;
-        //    IBandInfo[] pairedBands = await clientManager.GetBandsAsync();
-
-        //    // clear connectedBands dictionary:
-        //    if (connectedBands == null) connectedBands = new Dictionary<string, BandData>();
-        //    else
-        //    {
-        //        // dispose all connected bands:
-        //        foreach (var band in connectedBands)
-        //        {
-        //            await band.Value.StopReadingSensorsData();
-        //            band.Value.BandClient.Dispose();
-        //        }
-        //        connectedBands.Clear();
-        //    }
-
-        //    // connect new fake Bands:
-        //    foreach (IBandInfo band in pairedBands)
-        //    {
-        //        var bandClient = await clientManager.ConnectAsync(band);
-        //        if (bandClient != null)
-        //        {
-        //            // add new Band to collection:
-        //            BandData bandData = new BandData(bandClient, band.Name, bandBufferSize, calibrationBufferSize);
-        //            connectedBands.Add(band.Name, bandData);
-
-        //            await bandData.StartReadingSensorsData();
-        //        }
-        //    }
-
-        //    // update ObservableCollection of connected Bands:
-        //    SetupBandsListView();
-        //}
         #endregion
 
 
@@ -274,8 +222,6 @@ namespace BandBridge.Sockets
                 if (receivedMsg.Length > 0)
                 {
                     receivedMessage = Message.Deserialize(receivedMsg);
-                    //ServerLog = "\tReceived: " + receivedMessage;
-                    //allDone.Set();
                 }
             };
 
@@ -314,6 +260,10 @@ namespace BandBridge.Sockets
         }
 
         // Based on: http://msdn.microsoft.com/en-us/library/fx6588te.aspx
+        /// <summary>
+        /// Accepts incoming connection.
+        /// </summary>
+        /// <param name="ar"></param>
         private void AcceptCallback(IAsyncResult ar)
         {
             try
@@ -338,77 +288,57 @@ namespace BandBridge.Sockets
         }
 
         // Based on: http://msdn.microsoft.com/en-us/library/fx6588te.aspx
+        /// <summary>
+        /// Reads incoming data received from remote connection.
+        /// </summary>
+        /// <param name="ar"></param>
         private async void ReadCallback(IAsyncResult ar)
         {
-            //try
-            //{
-            //    // Retrieve the state object and the handler socket from the asynchronous state object.  
-            //    StateObject state = (StateObject)ar.AsyncState;
-            //    Socket handler = state.workSocket;
-
-            //    // Read data from the client socket.   
-            //    int bytesRead = handler.EndReceive(ar);
-            //    if (bytesRead > 0)
-            //    {
-            //        // pass received data and receiving process to packetizer object:
-            //        packetizer.DataReceived(state.buffer);
-
-            //        // wait for the rest of the message:
-            //        if (!packetizer.AllBytesReceived)
-            //        {
-            //            handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0, new AsyncCallback(ReadCallback), state);
-            //        }
-            //        // already received whole message:
-            //        else
-            //        {
-            //            // prepare response:
-            //            Message response = await PrepareResponseToClient(receivedMessage);
-            //            byte[] byteData = PacketProtocol.WrapMessage(Message.Serialize(response));
-
-            //            // send response to remote client socket:
-            //            Send(handler, byteData);
-            //        }
-            //    }
-            //}
-            //catch (Exception e)
-            //{
-            //    ServerLog = e.ToString();
-            //}
-
-            // Retrieve the state object and the handler socket from the asynchronous state object.  
-            StateObject state = (StateObject)ar.AsyncState;
-            Socket handler = state.workSocket;
-
-            // Read data from the client socket.   
-            int bytesRead = handler.EndReceive(ar);
-            if (bytesRead > 0)
+            try
             {
+                // Retrieve the state object and the handler socket from the asynchronous state object.  
+                StateObject state = (StateObject)ar.AsyncState;
+                Socket handler = state.workSocket;
 
-                Debug.WriteLine("\t-- bytes read: " + bytesRead);
-                Console.WriteLine("\t-- bytes read: " + bytesRead);
-
-                // pass received data and receiving process to packetizer object:
-                packetizer.DataReceived(state.buffer);
-
-                // wait for the rest of the message:
-                if (!packetizer.AllBytesReceived)
+                // Read data from the client socket.   
+                int bytesRead = handler.EndReceive(ar);
+                if (bytesRead > 0)
                 {
-                    handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0, new AsyncCallback(ReadCallback), state);
-                }
-                // already received whole message:
-                else
-                {
-                    // prepare response:
-                    Message response = await PrepareResponseToClient(receivedMessage);
-                    byte[] byteData = PacketProtocol.WrapMessage(Message.Serialize(response));
+                    Debug.WriteLine("\t-- bytes read: " + bytesRead);
+                    Console.WriteLine("\t-- bytes read: " + bytesRead);
 
-                    // send response to remote client socket:
-                    Send(handler, byteData);
+                    // pass received data and receiving process to packetizer object:
+                    packetizer.DataReceived(state.buffer);
+
+                    // wait for the rest of the message:
+                    if (!packetizer.AllBytesReceived)
+                    {
+                        handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0, new AsyncCallback(ReadCallback), state);
+                    }
+                    // already received whole message:
+                    else
+                    {
+                        // prepare response:
+                        Message response = await PrepareResponseToClient(receivedMessage);
+                        byte[] byteData = PacketProtocol.WrapMessage(Message.Serialize(response));
+
+                        // send response to remote client socket:
+                        Send(handler, byteData);
+                    }
                 }
+            }
+            catch (Exception e)
+            {
+                ServerLog = e.ToString();
             }
         }
 
         // Based on: http://msdn.microsoft.com/en-us/library/fx6588te.aspx
+        /// <summary>
+        /// Sends responce to remote client.
+        /// </summary>
+        /// <param name="handler"></param>
+        /// <param name="data"></param>
         private void Send(Socket handler, byte[] data)
         {
             try
@@ -423,6 +353,10 @@ namespace BandBridge.Sockets
         }
 
         // Based on: http://msdn.microsoft.com/en-us/library/fx6588te.aspx
+        /// <summary>
+        /// Finalizes sending response to remote client.
+        /// </summary>
+        /// <param name="ar"></param>
         private void SendCallback(IAsyncResult ar)
         {
             try
@@ -462,20 +396,20 @@ namespace BandBridge.Sockets
             {
                 // send the list of all connected Bands:
                 case MessageCode.SHOW_LIST_ASK:
-                    if (connectedBands != null)
-                        return new Message(MessageCode.SHOW_LIST_ANS, connectedBands.Keys.ToArray());
+                    if (connectedBand != null)
+                        return new Message(MessageCode.SHOW_LIST_ANS, new string[] { connectedBand.Name });
                     else
                         return new Message(MessageCode.SHOW_LIST_ANS, null);
 
                 // send current sensors data from specific Band device:
                 case MessageCode.GET_DATA_ASK:
-                    if (connectedBands != null && message.Result != null && message.Result.GetType() == typeof(string))
+                    if (connectedBand != null && message.Result != null && message.Result.GetType() == typeof(string))
                     {
-                        if (connectedBands.ContainsKey((string)message.Result))
+                        if (connectedBand.Name == (string)message.Result)
                         {
                             // get current sensors data and send them back to remote client:
-                            SensorData hrData = new SensorData(SensorCode.HR, connectedBands[(string)message.Result].HrBuffer.GetAverage());
-                            SensorData gsrData = new SensorData(SensorCode.HR, connectedBands[(string)message.Result].GsrBuffer.GetAverage());
+                            SensorData hrData = new SensorData(SensorCode.HR, connectedBand.HrBuffer.GetAverage());
+                            SensorData gsrData = new SensorData(SensorCode.HR, connectedBand.GsrBuffer.GetAverage());
                             return new Message(MessageCode.GET_DATA_ANS, new SensorData[] { hrData, gsrData });
                         }
                         else
@@ -485,14 +419,12 @@ namespace BandBridge.Sockets
 
                 // callibrate sensors data to get control average values:
                 case MessageCode.CALIB_ASK:
-                    if (connectedBands != null && message.Result != null && message.Result.GetType() == typeof(string))
+                    if (connectedBand != null && message.Result != null && message.Result.GetType() == typeof(string))
                     {
-                        if (connectedBands.ContainsKey((string)message.Result))
+                        if (connectedBand.Name == (string)message.Result)
                         {
                             // get current sensors data and send them back to remote client:
-                            var data = await connectedBands[(string)message.Result].CalibrateSensorsData();
-                            //Debug.WriteLine("Average HR: " + data[0]);
-                            //Debug.WriteLine("Average GSR: " + data[1]);
+                            var data = await connectedBand.CalibrateSensorsData();
                             return new Message(MessageCode.CALIB_ANS, data);
                         }
                         else
@@ -506,20 +438,5 @@ namespace BandBridge.Sockets
             }
         }
         #endregion
-
-
-
-        // TO REMOVE:
-        private void FakeBands()
-        {
-            for (int i = 0; i < 6; i++)
-            {
-                string name = "band_" + i;
-                BandData bd = new BandData(null, name, dataBufferSize, calibrationBufferSize);
-                bd.HrReading = 10 + i;
-                bd.GsrReading = 100 + i;
-                connectedBands.Add(name, bd);
-            }
-        }
     }
 }
