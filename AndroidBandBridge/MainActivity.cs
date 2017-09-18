@@ -2,6 +2,7 @@
 using Android.Widget;
 using Android.OS;
 using BandBridge.Sockets;
+using System.Threading.Tasks;
 
 namespace AndroidBandBridge
 {
@@ -66,14 +67,14 @@ namespace AndroidBandBridge
             {
                 if (startServerToggle.Checked)
                 {
-                    serverDebugLogText.Text = "start server";
                     bbServer.UpdateServerSettings(servicePortText.Text, dataBufferSizeText.Text, calibrationBufferSizeText.Text);
-                    //await bbServer.StartListening();
+                    Task.Factory.StartNew(() => bbServer.StartListening());
+                    serverDebugLogText.Text = "start server";
                 }
                 else
                 {
+                    Task.Factory.StartNew(() => bbServer.StopServer());
                     serverDebugLogText.Text = "stop server";
-                    //await bbServer.StopServer();
                 }
             };
             searchMSBandsButton.Click += async (object sender, System.EventArgs e) =>

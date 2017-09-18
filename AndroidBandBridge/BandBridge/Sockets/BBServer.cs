@@ -47,8 +47,6 @@ namespace BandBridge.Sockets
         private int dataBufferSize;
         /// <summary>Size of calibration data buffer.</summary>
         private int calibrationBufferSize;
-        /// <summary>Received message.</summary>
-        private Message message;
         /// <summary>Message buffer size.</summary>
         private const int bufferSize = 256;
         /// <summary>Max message size.</summary>
