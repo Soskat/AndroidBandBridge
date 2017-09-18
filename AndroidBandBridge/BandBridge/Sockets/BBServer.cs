@@ -10,6 +10,7 @@ using Communication.Data;
 using System.Collections.Generic;
 using BandBridge.Data;
 using System.Linq;
+using Microsoft.Band.Portable;
 
 namespace BandBridge.Sockets
 {
@@ -56,9 +57,13 @@ namespace BandBridge.Sockets
         private Socket serverSocketListener;
         /// <summary>Server log.</summary>
         private StringBuilder serverLog;
+        /// <summary>MS Band log.</summary>
+        private StringBuilder msBandLog;
 
         /// <summary>Dictionary of connected Band devices.</summary>
         private Dictionary<string, BandData> connectedBands;
+        /// <summary>Connected Band device.</summary>
+        private BandData connectedBand;
         #endregion
 
 
@@ -77,14 +82,32 @@ namespace BandBridge.Sockets
             get { return serverLog.ToString(); }
             set
             {
-                //if (serverLog == null) serverLog = new StringBuilder();
-                //serverLog.Clear();
-                //serverLog.Append(value);
+                if (serverLog == null) serverLog = new StringBuilder();
+                serverLog.Clear();
+                serverLog.Append(value);
 
                 Debug.WriteLine(value);
                 Console.WriteLine(value);
             }
         }
+        /// <summary>MS Band log.</summary>
+        public string MSBandLog
+        {
+            get { return msBandLog.ToString(); }
+            set
+            {
+                if (msBandLog == null) msBandLog = new StringBuilder();
+                msBandLog.Clear();
+                msBandLog.Append(value);
+
+                Debug.WriteLine(value);
+                Console.WriteLine(value);
+            }
+        }
+        /// <summary>Informs that sensor readings changed.</summary>
+        public Action BandInfoChanged { get; set; }
+        /// <summary>Connected MS Band device.</summary>
+        public BandData ConnectedBand { get { return connectedBand; } }
         #endregion
 
 
@@ -94,9 +117,9 @@ namespace BandBridge.Sockets
         /// </summary>
         public BBServer()
         {
-            IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
-            hostAddress = Array.Find(ipHostInfo.AddressList, a => a.AddressFamily == AddressFamily.InterNetwork);
-            //hostAddress = Dns.GetHostEntry(Dns.GetHostName()).AddressList[0];
+            //IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
+            //hostAddress = Array.Find(ipHostInfo.AddressList, a => a.AddressFamily == AddressFamily.InterNetwork);
+            hostAddress = Dns.GetHostEntry(Dns.GetHostName()).AddressList[0];
             ServerLog = hostAddress.ToString();
 
             servicePort = DefaultServicePort;
@@ -105,18 +128,106 @@ namespace BandBridge.Sockets
             maxMessageSize = MaxMessageSize;
             connectedBands = new Dictionary<string, BandData>();
 
-            FakeBands();
+            //FakeBands();
         }
         #endregion
 
 
         #region Public methods
-        public void UpdateServerSettings(int _servicePort, int _dataBufferSize, int _calibrationBufferSize)
+        /// <summary>
+        /// Updates server settings.
+        /// </summary>
+        /// <param name="servicePortText">New service port number as string</param>
+        /// <param name="dataBufferSizeText">New data buffer size as string</param>
+        /// <param name="calibrationBufferSizeText">New calibration buffer size as string</param>
+        public void UpdateServerSettings(string servicePortText, string dataBufferSizeText, string calibrationBufferSizeText)
         {
-            servicePort = _servicePort;
-            dataBufferSize = _dataBufferSize;
-            calibrationBufferSize = _calibrationBufferSize;
+            int _servicePort = 0;
+            if(Int32.TryParse(servicePortText, out _servicePort)) servicePort = _servicePort;
+            int _dataBufferSize = 0;
+            if (Int32.TryParse(dataBufferSizeText, out _dataBufferSize)) dataBufferSize = _dataBufferSize;
+            int _calibrationBufferSize = 0;
+            if (Int32.TryParse(calibrationBufferSizeText, out _calibrationBufferSize)) calibrationBufferSize = _calibrationBufferSize;
         }
+        #endregion
+
+
+        #region MS Band methods
+        /// <summary>
+        /// Gets MS Band devices connected to local computer.
+        /// </summary>
+        /// <returns></returns>
+        public async Task GetMSBandDevices()
+        {
+            MSBandLog = ">> Get MS Band devices...";
+
+            var bandClientManager = BandClientManager.Instance;
+            // query the service for paired devices
+            var pairedBands = await bandClientManager.GetPairedBandsAsync();
+            int pairedBandsCount = pairedBands.ToArray().Length;
+            MSBandLog = String.Format("Found {0} devices", pairedBandsCount);
+            if (pairedBandsCount > 0)
+            {
+                // connect to the first device
+                var bandInfo = pairedBands.FirstOrDefault();
+                var bandClient = await bandClientManager.ConnectAsync(bandInfo);
+
+                if (bandClient != null)
+                {
+                    connectedBand = new BandData(bandClient, bandInfo.Name, bufferSize, calibrationBufferSize);
+                    BandInfoChanged();
+                }
+            }
+        }
+
+        ///// <summary>
+        ///// Generates <see cref="FakeBandsAmount"/> number of Fake Bands.
+        ///// </summary>
+        ///// <returns></returns>
+        //public async Task GetFakeBands()
+        //{
+        //    Debug.WriteLine(">> Get Fake Bands...");
+
+        //    List<IBandInfo> fakeBands = new List<IBandInfo>();
+        //    for (int i = 1; i <= FakeBandsAmount; i++)
+        //    {
+        //        fakeBands.Add(new FakeBandInfo(BandConnectionType.Bluetooth, "Fake Band " + i.ToString()));
+        //    }
+        //    FakeBandClientManager.Configure(new FakeBandClientManagerOptions { Bands = fakeBands });
+
+        //    IBandClientManager clientManager = FakeBandClientManager.Instance;
+        //    IBandInfo[] pairedBands = await clientManager.GetBandsAsync();
+
+        //    // clear connectedBands dictionary:
+        //    if (connectedBands == null) connectedBands = new Dictionary<string, BandData>();
+        //    else
+        //    {
+        //        // dispose all connected bands:
+        //        foreach (var band in connectedBands)
+        //        {
+        //            await band.Value.StopReadingSensorsData();
+        //            band.Value.BandClient.Dispose();
+        //        }
+        //        connectedBands.Clear();
+        //    }
+
+        //    // connect new fake Bands:
+        //    foreach (IBandInfo band in pairedBands)
+        //    {
+        //        var bandClient = await clientManager.ConnectAsync(band);
+        //        if (bandClient != null)
+        //        {
+        //            // add new Band to collection:
+        //            BandData bandData = new BandData(bandClient, band.Name, bandBufferSize, calibrationBufferSize);
+        //            connectedBands.Add(band.Name, bandData);
+
+        //            await bandData.StartReadingSensorsData();
+        //        }
+        //    }
+
+        //    // update ObservableCollection of connected Bands:
+        //    SetupBandsListView();
+        //}
         #endregion
 
 
@@ -124,7 +235,7 @@ namespace BandBridge.Sockets
         /// <summary>
         /// Stops the server.
         /// </summary>
-        public void StopServer()
+        public async Task StopServer()
         {
             try
             {
@@ -146,7 +257,7 @@ namespace BandBridge.Sockets
         /// Starts listening for incoming connections.
         /// Based on: http://msdn.microsoft.com/en-us/library/fx6588te.aspx
         /// </summary>
-        public async void StartListening()
+        public async Task StartListening()
         {
             // create buffer for incoming data:
             receiveBuffer = new byte[bufferSize];
@@ -399,7 +510,7 @@ namespace BandBridge.Sockets
             for (int i = 0; i < 6; i++)
             {
                 string name = "band_" + i;
-                BandData bd = new BandData(new BandClient(), name, dataBufferSize, calibrationBufferSize);
+                BandData bd = new BandData(null, name, dataBufferSize, calibrationBufferSize);
                 bd.HrReading = 10 + i;
                 bd.GsrReading = 100 + i;
                 connectedBands.Add(name, bd);

@@ -17,8 +17,11 @@ namespace AndroidBandBridge
         private ToggleButton startServerToggle;
         private Button searchMSBandsButton;
         private Button createFakeBandsButton;
-        private ListView connectedBandsListView;
-        private TextView debugLogText;
+        private TextView serverDebugLogText;
+        private TextView msBandDebugLogText;
+        private TextView msBandNameText;
+        private TextView msBandHrText;
+        private TextView msBandGsrText;
         #endregion
 
         #region Methods
@@ -39,31 +42,35 @@ namespace AndroidBandBridge
             startServerToggle = FindViewById<ToggleButton>(Resource.Id.StartServerToggle);
             searchMSBandsButton = FindViewById<Button>(Resource.Id.SearchMSBandsButton);
             createFakeBandsButton = FindViewById<Button>(Resource.Id.CreateFakeBandsButton);
-            connectedBandsListView = FindViewById<ListView>(Resource.Id.ConnectedBandsListView);
-            debugLogText = FindViewById<TextView>(Resource.Id.DebugLogText);
+            serverDebugLogText = FindViewById<TextView>(Resource.Id.ServerDebugLogText);
+            msBandDebugLogText = FindViewById<TextView>(Resource.Id.MSBandDebugLogText);
+            msBandNameText = FindViewById<TextView>(Resource.Id.MSBandNameText);
+            msBandHrText = FindViewById<TextView>(Resource.Id.MSBandHrText);
+            msBandGsrText = FindViewById<TextView>(Resource.Id.MSBandGsrText);
 
             // create BBServer object:
             bbServer = new BBServer();
+            bbServer.BandInfoChanged += () =>
+            {
+                if (bbServer.ConnectedBand != null)
+                {
+                    msBandNameText.Text = bbServer.ConnectedBand.Name;
+                    msBandHrText.Text = bbServer.ConnectedBand.HrReading.ToString();
+                    msBandGsrText.Text = bbServer.ConnectedBand.GsrReading.ToString();
+                }
+            };
             UpdateUI();
 
             // Add behaviour to buttons:
             startServerToggle.Click += (object sender, System.EventArgs e) => {
-                if (startServerToggle.Checked)
-                {
-                    debugLogText.Text = "start server";
-                    StartBBServer();
-                }
-                else
-                {
-                    debugLogText.Text = "stop server";
-                    StopBBServer();
-                }
+                if (startServerToggle.Checked) StartBBServer();
+                else StopBBServer();
             };
             searchMSBandsButton.Click += (object sender, System.EventArgs e) => {
-                debugLogText.Text = "search for MS Band devices...";
+                serverDebugLogText.Text = "search for MS Band devices...";
             };
             createFakeBandsButton.Click += (object sender, System.EventArgs e) => {
-                debugLogText.Text = "create Fake Band devices...";
+                serverDebugLogText.Text = "create Fake Band devices...";
             };
         }
 
@@ -79,14 +86,23 @@ namespace AndroidBandBridge
             calibrationBufferSizeText.Text = bbServer.CalibrationBufferSize.ToString();
         }
 
-        private void StartBBServer()
+        /// <summary>
+        /// Starts the server listening for incoming connections.
+        /// </summary>
+        private async void StartBBServer()
         {
-            //bbServer.UpdateServerSettings();
+            serverDebugLogText.Text = "start server";
+            bbServer.UpdateServerSettings(servicePortText.Text, dataBufferSizeText.Text, calibrationBufferSizeText.Text);
+            await bbServer.StartListening();
         }
 
-        private void StopBBServer()
+        /// <summary>
+        /// Stops the server listening for incoming connections.
+        /// </summary>
+        private async void StopBBServer()
         {
-
+            serverDebugLogText.Text = "stop server";
+            await bbServer.StopServer();
         }
         #endregion
     }

@@ -152,6 +152,7 @@ namespace Communication.Packet
                 }
             }
 
+            // clear counter for next message:
             this.bytesReceived = 0;
         }
 
