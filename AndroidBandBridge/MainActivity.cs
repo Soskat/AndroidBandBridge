@@ -4,6 +4,7 @@ using Android.OS;
 using BandBridge.Sockets;
 using System.Threading.Tasks;
 
+
 namespace AndroidBandBridge
 {
     [Activity(Label = "BandBridge for Android", MainLauncher = true)]
@@ -24,16 +25,15 @@ namespace AndroidBandBridge
         private TextView msBandGsrText;
         #endregion
 
-        #region Methods
 
-        #endregion
+        #region Activity methods
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
 
             // Set our view from the "main" layout resource
             SetContentView(Resource.Layout.Main);
-            
+
             // Get the UI controls from the loaded layout:
             serverAddressText = FindViewById<TextView>(Resource.Id.ServerAddressText);
             servicePortText = FindViewById<EditText>(Resource.Id.ServicePortText);
@@ -60,7 +60,7 @@ namespace AndroidBandBridge
                     }
                 });
             };
-            UpdateUI();
+            UpdateServerSettingsUI();
 
             // Add behaviour to buttons:
             startServerToggle.Click += (object sender, System.EventArgs e) =>
@@ -83,12 +83,14 @@ namespace AndroidBandBridge
                 msBandDebugLogText.Text = bbServer.MSBandLog;
             };
         }
+        #endregion
+
 
         #region Private methods
         /// <summary>
-        /// Updates UI elements.
+        /// Updates server settings UI elements.
         /// </summary>
-        private void UpdateUI()
+        private void UpdateServerSettingsUI()
         {
             serverAddressText.Text = bbServer.HostAddress.ToString();
             servicePortText.Text = bbServer.ServicePort.ToString();

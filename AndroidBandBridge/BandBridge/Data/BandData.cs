@@ -23,7 +23,7 @@ namespace BandBridge.Data
         /// <summary>Last GSR sensor reading.</summary>
         private int gsrReading;
         /// <summary>Size of the buffer for incoming sensors readings.</summary>
-        private int bufferSize;
+        private int dataBufferSize;
         /// <summary>Size of the buffer for calibration sensors readings.</summary>
         private int calibrationBufferSize;
         /// <summary>Storage for Heart Rate sensor values.</summary>
@@ -87,17 +87,18 @@ namespace BandBridge.Data
         {
             BandClient = bandClient;
             Name = bandName;
-            this.bufferSize = bufferSize;
+            this.dataBufferSize = bufferSize;
             this.calibrationBufferSize = calibrationBufferSize;
-            HrBuffer = new CircularBuffer(this.bufferSize);
-            GsrBuffer = new CircularBuffer(this.bufferSize);
-
+            HrBuffer = new CircularBuffer(this.dataBufferSize);
+            GsrBuffer = new CircularBuffer(this.dataBufferSize);
+            // to prevent errors:
             ReadingsChanged += () => { };
         }
         #endregion
 
 
         #region Private methods
+        // Based on: https://components.xamarin.com/gettingstarted/microsoft-band-sdk
         /// <summary>
         /// Gets Hear Rate sensor values from connected Band device.
         /// </summary>
@@ -111,10 +112,6 @@ namespace BandBridge.Data
             {
                 HrBuffer.Add(args.SensorReading.HeartRate);
                 HrReading = args.SensorReading.HeartRate;
-
-                Debug.WriteLine(args.SensorReading.HeartRate);
-
-
                 // inform that hr reading changed:
                 ReadingsChanged();
             };
@@ -130,7 +127,8 @@ namespace BandBridge.Data
                 await heartRate.StartReadingsAsync(BandSensorSampleRate.Ms16);
             }
         }
-        
+
+        // Based on: https://components.xamarin.com/gettingstarted/microsoft-band-sdk
         /// <summary>
         /// Gets Galvenic Skin Response sensor values from connected Band device.
         /// </summary>
@@ -143,10 +141,6 @@ namespace BandBridge.Data
             gsr.ReadingChanged += (o, args) => {
                 GsrBuffer.Add((int)args.SensorReading.Resistance);
                 GsrReading = (int)args.SensorReading.Resistance;
-
-                Debug.WriteLine(args.SensorReading.Resistance);
-
-
                 // inform that gsr reading changed:
                 ReadingsChanged();
             };
@@ -161,6 +155,7 @@ namespace BandBridge.Data
             }
         }
 
+        // Based on: https://components.xamarin.com/gettingstarted/microsoft-band-sdk
         /// <summary>
         /// Stops reading from connected Band's Heart Rate sensor.
         /// </summary>
@@ -178,6 +173,7 @@ namespace BandBridge.Data
             }
         }
 
+        // Based on: https://components.xamarin.com/gettingstarted/microsoft-band-sdk
         /// <summary>
         /// Stops reading from connected Band's Galvanic Skin Response sensor.
         /// </summary>
@@ -206,7 +202,7 @@ namespace BandBridge.Data
         {
             await StartHrReading();
             await StartGsrReading();
-            Debug.WriteLine(name + ": Started reading data...");
+            //Debug.WriteLine(name + ": Started reading data...");
         }
 
         /// <summary>
@@ -217,34 +213,38 @@ namespace BandBridge.Data
         {
             await StopHrReading();
             await StopGsrReading();
-            Debug.WriteLine(name + ": Stopped reading data...");
+            //Debug.WriteLine(name + ": Stopped reading data...");
         }
 
         /// <summary>
         /// Calibrates readings from MS Band sensors.
         /// </summary>
         /// <returns>Calibrated data</returns>
-        public async Task<SensorData[]> CalibrateSensorsData()
+        public async Task<SensorData[]> CalibrateSensorsData(int _dataBufferSize, int _calibrationBufferSize)
         {
+            // update buffer sizes:
+            calibrationBufferSize = _calibrationBufferSize;
+            dataBufferSize = _dataBufferSize;
             // calibrate sensors data:
             await StopReadingSensorsData();
             hrBuffer.Resize(calibrationBufferSize);
             gsrBuffer.Resize(calibrationBufferSize);
             await StartReadingSensorsData();
 
-            Debug.WriteLine(name + ": start calibration => " + DateTime.Now);
+            Stopwatch timer = new Stopwatch();
+            timer.Start();
             // wait until the buffer is full:
             while (!hrBuffer.IsFull) await Task.Delay(100);
-            Debug.WriteLine(name + ": calibration is over => " + DateTime.Now);
-
+            timer.Stop();
+            Debug.WriteLine("{0}: CALIBRATION TIME for {1} samples => {2:00}:{3:00}", name, calibrationBufferSize, timer.Elapsed.Minutes, timer.Elapsed.Seconds);
             // get the reference values for each sensor:
             SensorData hrData = new SensorData(SensorCode.HR, hrBuffer.GetAverage());
             SensorData gsrData = new SensorData(SensorCode.GSR, gsrBuffer.GetAverage());
 
             // continue monitoring incoming sensors readings
             await StopReadingSensorsData();
-            hrBuffer.Resize(bufferSize);
-            gsrBuffer.Resize(bufferSize);
+            hrBuffer.Resize(dataBufferSize);
+            gsrBuffer.Resize(dataBufferSize);
             await StartReadingSensorsData();
 
             return new SensorData[] { hrData, gsrData };

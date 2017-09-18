@@ -7,7 +7,6 @@ using Communication.Packet;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using Communication.Data;
-using System.Collections.Generic;
 using BandBridge.Data;
 using System.Linq;
 using Microsoft.Band.Portable;
@@ -44,9 +43,9 @@ namespace BandBridge.Sockets
         /// <summary>Service port number.</summary>
         private int servicePort;
         /// <summary>Size of data buffer.</summary>
-        private int dataBufferSize;
+        private int dataBufferSize = 16;
         /// <summary>Size of calibration data buffer.</summary>
-        private int calibrationBufferSize;
+        private int calibrationBufferSize = 380;
         /// <summary>Message buffer size.</summary>
         private const int bufferSize = 256;
         /// <summary>Max message size.</summary>
@@ -77,6 +76,8 @@ namespace BandBridge.Sockets
         public int CalibrationBufferSize { get { return calibrationBufferSize; } }
         /// <summary>Informs that sensor readings changed.</summary>
         public Action BandInfoChanged { get; set; }
+        /// <summary>Requests for updating buffer sizes.</summary>
+        public Action UpdateBufferSizesRequest { get; set; }
         /// <summary>Connected MS Band device.</summary>
         public BandData ConnectedBand { get { return connectedBand; } }
         /// <summary>Server log.</summary>
@@ -119,10 +120,9 @@ namespace BandBridge.Sockets
             hostAddress = Dns.GetHostEntry(Dns.GetHostName()).AddressList[0];
             ServerLog = hostAddress.ToString();
             servicePort = DefaultServicePort;
-            dataBufferSize = 16;
-            calibrationBufferSize = 200;
             maxMessageSize = MaxMessageSize;
             BandInfoChanged += () => { };
+            UpdateBufferSizesRequest += () => { };
         }
         #endregion
 
@@ -147,6 +147,7 @@ namespace BandBridge.Sockets
 
 
         #region MS Band methods
+        // based on: https://components.xamarin.com/gettingstarted/microsoft-band-sdk
         /// <summary>
         /// Gets MS Band devices connected to local computer.
         /// </summary>
@@ -170,7 +171,7 @@ namespace BandBridge.Sockets
                 // connect to the first device
                 var bandInfo = pairedBands.FirstOrDefault();
                 var bandClient = await bandClientManager.ConnectAsync(bandInfo);
-
+                // save reference to the band client object:
                 if (bandClient != null)
                 {
                     connectedBand = new BandData(bandClient, bandInfo.Name, bufferSize, calibrationBufferSize);
@@ -248,7 +249,6 @@ namespace BandBridge.Sockets
                     // Wait until a connection is made before continuing.
                     allDone.WaitOne();
 
-                    packetizer.DEBUG_ShowDataBuffer();
                 }
             }
             catch (Exception e)
@@ -266,9 +266,6 @@ namespace BandBridge.Sockets
         {
             try
             {
-                //// Signal the main thread to continue.  
-                //allDone.Set();
-
                 // Get the socket that handles the client request.
                 Socket listener = (Socket)ar.AsyncState;
                 Socket handler = listener.EndAccept(ar);
@@ -302,9 +299,6 @@ namespace BandBridge.Sockets
                 int bytesRead = handler.EndReceive(ar);
                 if (bytesRead > 0)
                 {
-                    Debug.WriteLine("\t-- bytes read: " + bytesRead);
-                    Console.WriteLine("\t-- bytes read: " + bytesRead);
-
                     // pass received data and receiving process to packetizer object:
                     packetizer.DataReceived(state.buffer);
 
@@ -389,7 +383,6 @@ namespace BandBridge.Sockets
         private async Task<Message> PrepareResponseToClient(Message message)
         {
             ServerLog = String.Format("\t- Message code: {0}", message.Code);
-
             switch (message.Code)
             {
                 // send the list of all connected Bands:
@@ -421,8 +414,9 @@ namespace BandBridge.Sockets
                     {
                         if (connectedBand.Name == (string)message.Result)
                         {
+                            UpdateBufferSizesRequest();
                             // get current sensors data and send them back to remote client:
-                            var data = await connectedBand.CalibrateSensorsData();
+                            var data = await connectedBand.CalibrateSensorsData(dataBufferSize, calibrationBufferSize);
                             return new Message(MessageCode.CALIB_ANS, data);
                         }
                         else

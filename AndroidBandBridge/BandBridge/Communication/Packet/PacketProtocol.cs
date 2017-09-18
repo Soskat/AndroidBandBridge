@@ -113,37 +113,25 @@ namespace Communication.Packet
             {
                 // Determine how many bytes we want to transfer to the buffer and transfer them
                 int bytesAvailable = data.Length - i;
-                DEBUG_WriteLine("\t\ti: " + i);
-                DEBUG_WriteLine("\t\tdata.Length: " + data.Length);
-                DEBUG_WriteLine("\t\tbytesAvailable: " + bytesAvailable);
 
                 if (this.dataBuffer != null)
                 {
-                    DEBUG_WriteLine("\t\t[DB] bytesReceived: " + this.bytesReceived);
                     // We're reading into the data buffer
                     int bytesRequested = this.dataBuffer.Length - this.bytesReceived;
-                    DEBUG_WriteLine("\t\t[DB] bytesRequested: " + bytesRequested);
-
                     // Copy the incoming bytes into the buffer
                     int bytesTransferred = Math.Min(bytesRequested, bytesAvailable);
-                    DEBUG_WriteLine("\t\t[DB] bytesTransfered: " + bytesTransferred);
-
                     Array.Copy(data, i, this.dataBuffer, this.bytesReceived, bytesTransferred);
                     i += bytesTransferred;
-
                     // Notify "read completion"
                     this.ReadCompleted(bytesTransferred);
                 }
                 else
                 {
-                    DEBUG_WriteLine("\t\t[LB] bytesReceived: " + this.bytesReceived);
                     // We're reading into the length prefix buffer
                     int bytesRequested = this.lengthBuffer.Length - this.bytesReceived;
-                    DEBUG_WriteLine("\t\t[LB] bytesRequested: " + bytesRequested);
 
                     // Copy the incoming bytes into the buffer
                     int bytesTransferred = Math.Min(bytesRequested, bytesAvailable);
-                    DEBUG_WriteLine("\t\t[LB] bytesTransfered: " + bytesTransferred);
                     Array.Copy(data, i, this.lengthBuffer, this.bytesReceived, bytesTransferred);
                     //Array.Copy(data, i, this.lengthBuffer, 0, bytesTransferred);
                     i += bytesTransferred;
@@ -165,7 +153,6 @@ namespace Communication.Packet
         {
             // Get the number of bytes read into the buffer
             this.bytesReceived += count;
-            DEBUG_WriteLine("\t bytesReceived: " + this.bytesReceived);
 
             if (this.dataBuffer == null)
             {
@@ -186,25 +173,9 @@ namespace Communication.Packet
 
                     // Another sanity check is needed here for very large packets, to prevent denial-of-service attacks
                     if (this.maxMessageSize > 0 && length > this.maxMessageSize)
-                    {
-                        DEBUG_WriteLine("Message TOO LONG......");
-                        DEBUG_ShowLengthBuffer();
-
-                        // set flag that all message's bytes was reveived:
-                        AllBytesReceived = true;
-
-                        // We've gotten an entire packet
-                        if (this.MessageArrived != null)
-                            this.MessageArrived(new byte[0]);
-
-                        // Start reading the length buffer again
-                        this.dataBuffer = null;
-                        this.bytesReceived = 0;
-                        //throw new System.Net.ProtocolViolationException(
-                        //    "Message length " + length.ToString(System.Globalization.CultureInfo.InvariantCulture) + 
-                        //    " is larger than maximum message size " + this.maxMessageSize.ToString(System.Globalization.CultureInfo.InvariantCulture));
-
-                    }
+                        throw new System.Net.ProtocolViolationException(
+                            "Message length " + length.ToString(System.Globalization.CultureInfo.InvariantCulture) + 
+                            " is larger than maximum message size " + this.maxMessageSize.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
                     // Zero-length packets are allowed as keepalives
                     if (length == 0)
@@ -215,8 +186,6 @@ namespace Communication.Packet
                     }
                     else
                     {
-                        DEBUG_WriteLine("Good size message...");
-                        DEBUG_ShowLengthBuffer();
                         // Create the data buffer and start reading into it
                         this.dataBuffer = new byte[length];
                         this.bytesReceived = 0;
@@ -231,10 +200,6 @@ namespace Communication.Packet
                 }
                 else
                 {
-                    DEBUG_WriteLine("Received whole message...");
-                    DEBUG_ShowDataBuffer();
-
-
                     // set flag that all message's bytes was reveived:
                     AllBytesReceived = true;
 
@@ -250,14 +215,20 @@ namespace Communication.Packet
         }
 
 
-
-
+        #region Debug methods
+        /// <summary>
+        /// Writes given string both in console window and debug terminal.
+        /// </summary>
+        /// <param name="s"></param>
         public void DEBUG_WriteLine(string s)
         {
             Debug.WriteLine(s);
             Console.WriteLine(s);
         }
 
+        /// <summary>
+        /// Prints lengthBuffer content.
+        /// </summary>
         public void DEBUG_ShowLengthBuffer()
         {
             // debug:
@@ -271,8 +242,9 @@ namespace Communication.Packet
             Console.WriteLine("");
         }
 
-
-
+        /// <summary>
+        /// Prints dataBuffer content.
+        /// </summary>
         public void DEBUG_ShowDataBuffer()
         {
             // debug:
@@ -291,8 +263,7 @@ namespace Communication.Packet
                 Console.WriteLine("");
             }
         }
-
-
+        
         /// <summary>
         /// Test of the PacketProtocol class capabilities.
         /// </summary>
@@ -315,5 +286,6 @@ namespace Communication.Packet
             Debug.Assert("Hello" == messages[0], "messages[0] is wrong");
             Debug.Assert("World" == messages[1], "messages[1] is wrong");
         }
+        #endregion
     }
 }
